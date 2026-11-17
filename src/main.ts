@@ -35,4 +35,7 @@ async function main(): Promise<void> {
   console.log(await agent.run(request));
 }
 
-main();
+main().catch((err) => {
+  console.error("Unexpected error:", err instanceof Error ? err.message : err);
+  process.exitCode = 1;
+});

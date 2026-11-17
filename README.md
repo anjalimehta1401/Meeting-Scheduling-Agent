@@ -15,7 +15,7 @@ but nobody has reviewed it carefully.
 data/                 Sample directory (people.json) and calendars (calendars.json)
 src/
   slots.ts            Working-day slot model and free-window search
-  tools.ts            Tools the agent can call
+  tools.ts            Tools the agent can call (validated; includes multi-day search)
   agent.ts            The tool-calling loop
   prompts.ts          System prompt construction
   model.ts            Model interface + FakeModel for tests

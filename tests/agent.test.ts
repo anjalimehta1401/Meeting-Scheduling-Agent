@@ -185,3 +185,34 @@ describe("SchedulingAgent: termination", () => {
     expect(await new SchedulingAgent(model, loadStore()).run("hi")).toBe(MODEL_FAILURE_MESSAGE);
   });
 });
+
+describe("system prompt", () => {
+  it("does not leak contact details but lists ids and tools", async () => {
+    const model = new FakeModel([final("ok")]);
+    await new SchedulingAgent(model, loadStore()).run("hi");
+    const system = model.calls[0][0].content;
+    expect(system).not.toContain("@northwind");
+    expect(system).not.toContain("555");
+    expect(system).toContain('"id": "priya"');
+    expect(system).toContain("find_free_slots_in_range");
+  });
+});
+
+describe("SchedulingAgent: range search end to end", () => {
+  it("returns dated slots to the model", async () => {
+    const model = new FakeModel([
+      toolCall("find_free_slots_in_range", {
+        attendees: ["priya", "sam", "dana"],
+        start_date: "2026-11-02",
+        end_date: "2026-11-04",
+        duration_minutes: 120,
+        max_results: 1,
+      }),
+      final("Wednesday Nov 4, 12:00-14:00."),
+    ]);
+    await new SchedulingAgent(model, loadStore()).run("2 hours for Priya, Sam and Dana this week");
+    expect(JSON.parse(model.calls[1].at(-1)!.content)).toEqual([
+      { date: "2026-11-04", start: "12:00", end: "14:00" },
+    ]);
+  });
+});

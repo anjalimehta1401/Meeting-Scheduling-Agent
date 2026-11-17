@@ -31,8 +31,13 @@ export class OpenAICompatibleModel implements Model {
         Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({ model: this.model, messages: converted }),
+      // A hung endpoint must not hang the assistant (the agent turns this into a friendly error).
+      signal: AbortSignal.timeout(60_000),
     });
+    if (!response.ok) throw new Error(`Model endpoint returned HTTP ${response.status}`);
     const payload = await response.json();
-    return payload.choices[0].message.content;
+    const content = payload?.choices?.[0]?.message?.content;
+    if (typeof content !== "string") throw new Error("Model response had no text content");
+    return content;
   }
 }
