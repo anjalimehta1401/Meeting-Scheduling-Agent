@@ -36,3 +36,25 @@ describe("slots", () => {
     expect(findFreeWindows(free, 2)).toEqual([1, 2]);
   });
 });
+
+describe("slots: edge cases", () => {
+  it("includes a window that ends exactly at the end of the day", () => {
+    const free = new Array(16).fill(false);
+    free[14] = true;
+    free[15] = true; // 16:00-17:00
+    expect(findFreeWindows(free, 2)).toEqual([14]);
+    expect(findFreeWindows(free, 1)).toEqual([14, 15]);
+  });
+
+  it("includes a window that ends exactly at endSlot", () => {
+    const free = new Array(16).fill(true);
+    expect(findFreeWindows(free, 2, 0, 4)).toEqual([0, 1, 2]);
+  });
+
+  it("clamps out-of-range bounds and rejects non-positive sizes", () => {
+    const free = new Array(16).fill(true);
+    expect(findFreeWindows(free, 1, -5, 99)).toHaveLength(16);
+    expect(findFreeWindows(free, 0)).toEqual([]);
+    expect(findFreeWindows(free, 20)).toEqual([]);
+  });
+});

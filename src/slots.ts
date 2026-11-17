@@ -84,7 +84,12 @@ export function findFreeWindows(
   endSlot: number = SLOTS_PER_DAY,
 ): number[] {
   const results: number[] = [];
-  for (let start = startSlot; start < endSlot - slotsNeeded; start++) {
+  if (!Number.isInteger(slotsNeeded) || slotsNeeded < 1) return results;
+  const from = Math.max(0, Math.ceil(startSlot));
+  const to = Math.min(free.length, Math.floor(endSlot));
+  // A window [start, start + slotsNeeded) must fit inside [from, to), so the
+  // last valid start is `to - slotsNeeded` (inclusive).
+  for (let start = from; start <= to - slotsNeeded; start++) {
     if (free.slice(start, start + slotsNeeded).every(Boolean)) {
       results.push(start);
     }
