@@ -17,8 +17,11 @@ export interface BusyBlock {
   title?: string;
 }
 
-/** Convert "HH:MM" to minutes since midnight. */
+/** Convert "HH:MM" to minutes since midnight. Throws on anything malformed. */
 export function timeToMinutes(clock: string): number {
+  if (typeof clock !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(clock)) {
+    throw new Error(`Invalid time: ${clock}`);
+  }
   const [hours, minutes] = clock.split(":").map(Number);
   return hours * 60 + minutes;
 }
@@ -44,16 +47,24 @@ export function timeToSlotCeil(clock: string): number {
 
 /** Convert a slot index to the clock time at which that slot starts. */
 export function slotToTime(index: number): string {
+  if (!Number.isInteger(index) || index < 0 || index > SLOTS_PER_DAY) {
+    throw new Error(`Invalid slot index: ${index}`);
+  }
   return minutesToTime(DAY_START_MINUTES + index * SLOT_MINUTES);
 }
 
 /**
  * Build a free/busy array for one day from a person's busy blocks.
  * Any slot that overlaps a busy block, even partially, is marked busy.
+ * Malformed times, or a block that ends at/before its start, throw rather than
+ * being skipped: silently ignoring a block would make someone look free.
  */
 export function availabilityFromBusy(busyBlocks: BusyBlock[]): boolean[] {
   const free = new Array<boolean>(SLOTS_PER_DAY).fill(true);
   for (const block of busyBlocks) {
+    if (timeToMinutes(block.start) >= timeToMinutes(block.end)) {
+      throw new Error(`Busy block must end after it starts: ${block.start}-${block.end}`);
+    }
     const start = Math.max(0, timeToSlot(block.start));
     const end = Math.min(SLOTS_PER_DAY, timeToSlotCeil(block.end));
     for (let i = start; i < end; i++) {

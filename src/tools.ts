@@ -177,9 +177,17 @@ function searchDay(
   earliest: string | undefined,
   latest: string | undefined,
 ): Slot[] {
-  const free = combineAvailability(
-    ids.map((id) => availabilityFromBusy(store.calendars[id]?.[date] ?? [])),
-  );
+  let free: boolean[];
+  try {
+    free = combineAvailability(
+      ids.map((id) => availabilityFromBusy(store.calendars[id]?.[date] ?? [])),
+    );
+  } catch {
+    // Corrupt calendar data: refuse to answer rather than guess someone is free.
+    throw new ToolError(
+      `Calendar data for ${date} is invalid, so availability cannot be determined reliably.`,
+    );
+  }
   // A 45-minute meeting occupies two 30-minute slots, so round the slot count up.
   const slotsNeeded = Math.ceil(duration / SLOT_MINUTES);
   // `earliest` rounds up (never start before it); `latest` rounds down (must finish by it).

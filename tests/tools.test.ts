@@ -185,3 +185,21 @@ describe("findFreeSlotsInRange", () => {
     expect(() => findFreeSlotsInRange(store, { ...ok, max_results: 0 })).toThrow(ToolError);
   });
 });
+
+describe("tools: corrupt calendar data", () => {
+  it("returns a ToolError instead of treating the person as free", () => {
+    const store = loadStore();
+    store.calendars.priya["2026-11-03"] = [{ start: "9am", end: "10:00" }];
+    expect(() =>
+      findFreeSlots(store, { attendees: ["priya"], date: "2026-11-03", duration_minutes: 30 }),
+    ).toThrow(ToolError);
+  });
+
+  it("accepts user bounds outside the working day without error", () => {
+    const store = loadStore();
+    const args = { attendees: ["luis"], date: "2026-11-02", duration_minutes: 30 };
+    expect(findFreeSlots(store, { ...args, earliest: "08:00", latest: "18:00" })).toHaveLength(16);
+    expect(findFreeSlots(store, { ...args, earliest: "17:00" })).toEqual([]);
+    expect(findFreeSlots(store, { ...args, earliest: "15:00", latest: "14:00" })).toEqual([]);
+  });
+});

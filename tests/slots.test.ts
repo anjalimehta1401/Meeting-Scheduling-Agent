@@ -58,3 +58,21 @@ describe("slots: edge cases", () => {
     expect(findFreeWindows(free, 20)).toEqual([]);
   });
 });
+
+describe("slots: bad calendar data fails loudly", () => {
+  it("rejects malformed times instead of ignoring the block", () => {
+    expect(() => availabilityFromBusy([{ start: "9am", end: "10:00" }])).toThrow();
+    expect(() => availabilityFromBusy([{ start: "09:00", end: "25:00" }])).toThrow();
+  });
+
+  it("rejects blocks that end at or before they start", () => {
+    expect(() => availabilityFromBusy([{ start: "10:00", end: "10:00" }])).toThrow();
+    expect(() => availabilityFromBusy([{ start: "11:00", end: "10:00" }])).toThrow();
+  });
+
+  it("rejects invalid slot indexes", () => {
+    expect(() => slotToTime(-1)).toThrow();
+    expect(() => slotToTime(17)).toThrow();
+    expect(() => slotToTime(1.5)).toThrow();
+  });
+});

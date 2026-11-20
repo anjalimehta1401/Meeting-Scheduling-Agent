@@ -1,6 +1,6 @@
 # NOTES
 
-Run everything with `npm test` (68 tests) and `npm run typecheck`. No new commands.
+Run everything with `npm test` (73 tests) and `npm run typecheck`. No new commands.
 
 ## Problems found and what I changed
 
@@ -10,6 +10,7 @@ Found by reading all of `src/` first, then writing a failing test per suspected 
 - **Last window dropped** (`slots.ts`): loop used `start < end - needed`, so a window ending exactly at the end of the range (e.g. 16:30-17:00) was never offered. Fixed to `<=`. The existing test `finds free slots for two people in the afternoon` *asserted the buggy output* (no 16:30 slot, though Priya and Sam are both free); I changed its expectation and that is the only existing test whose meaning I changed.
 - **45 minutes became 30** (`tools.ts`): `floor(duration/30)`. Now `ceil`, so a 45-min meeting needs two free slots. Returned `end` is the real meeting end (start + duration).
 - **`earliest` could be violated**: "12:10" was floored to the 12:00 slot. `earliest` now rounds up, `latest` rounds down.
+- **Corrupt calendar data was silently ignored** (`slots.ts`): a busy block like `"9am"` became `NaN` slot indexes, the loop never ran, and the person looked free. `timeToMinutes` now validates `HH:MM`, blocks must end after they start, and `find_free_slots` turns this into a ToolError instead of guessing.
 - Added a property-style test that checks every offered slot against raw busy blocks for all attendees, days and several durations.
 
 **Invented people (A.2)**
@@ -35,6 +36,7 @@ Found by reading all of `src/` first, then writing a failing test per suspected 
 ## How I used AI tools
 
 - Used Claude Code for: reading the codebase and listing suspect areas, drafting the fixes and tests, and drafting this file. I reviewed the diffs and ran the tests after each commit.
+- **Compared against another AI's version of `slots.ts`:** it added strict time validation (which I adopted, since I had missed the silent-NaN case) but made `findFreeWindows` throw on out-of-range bounds, which would crash ordinary requests like "earliest 08:00", so I kept clamping. I also dropped my own extra length check in `combineAvailability` rather than edit an existing test.
 - **Corrected AI output:** (1) the first draft of a range-search test contained a nonsense assertion (`[...].filter(() => false).concat(r)`) that could never fail; I replaced it with a hand-computed expectation (Priya+Sam+Dana first share two hours Wed 12:00-14:00). (2) A test meant to force an unexpected tool exception used `null` calendar data, which the code's `?? []` silently swallowed, so the test was not testing anything; I changed it to a value that really throws. (3) The AI initially re-exported unused constants from `tools.ts`; removed.
 - *(Edit this section to reflect your own workflow before submitting; it is a record of this session, so it must match what you actually did.)*
 
